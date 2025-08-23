@@ -25,9 +25,7 @@ class _StartPageState extends State<StartPage> {
         });
         // Navigate to phone selection page
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const PhoneSelectionPage(),
-          ),
+          MaterialPageRoute(builder: (context) => const PhoneSelectionPage()),
         );
       }
     });
@@ -120,7 +118,7 @@ class _StartPageState extends State<StartPage> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(25),
                                 child: Image.asset(
-                                  'assets/images/iphone16promax.png',
+                                  'assets/images/iphone_getstarted.png',
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -158,48 +156,6 @@ class _StartPageState extends State<StartPage> {
                               color: Colors.white,
                               height: 1.5,
                             ),
-                          ),
-                          const SizedBox(height: 30),
-                          // Navigation dots
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.3),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.3),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.3),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ],
                           ),
                           const SizedBox(height: 30),
                           // Get Started button
