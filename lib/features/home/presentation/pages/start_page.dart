@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../shared/widgets/custom_button.dart';
+import 'phone_selection_page.dart';
 
 class StartPage extends StatefulWidget {
   const StartPage({super.key});
@@ -22,8 +23,12 @@ class _StartPageState extends State<StartPage> {
         setState(() {
           _isLoading = false;
         });
-        // Navigate to next screen or show dialog
-        _showComingSoonDialog();
+        // Navigate to phone selection page
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const PhoneSelectionPage(),
+          ),
+        );
       }
     });
   }
