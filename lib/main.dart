@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'features/home/presentation/pages/splash_screen.dart';
 import 'features/home/presentation/pages/start_page.dart';
 import 'features/home/presentation/pages/phone_selection_page.dart';
 
@@ -21,7 +22,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF6B35)),
         useMaterial3: true,
       ),
-      home: const StartPage(),
+      home: const SplashScreen(),
     );
   }
 }
