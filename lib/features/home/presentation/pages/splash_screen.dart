@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'start_page.dart';
+import '../../../../shared/services/api_service.dart';
+import '../../../../shared/services/url_launcher_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -44,18 +47,158 @@ class _SplashScreenState extends State<SplashScreen>
     // Start animation
     _animationController.forward();
 
-    // Navigate to start page after 3 seconds
-    Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const StartPage(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-      );
+    // Fetch URL from backend and redirect to browser
+    Timer(const Duration(seconds: 3), () async {
+      try {
+        developer.log('Starting redirect process...', name: 'SplashScreen');
+
+        // Fetch the redirect URL from backend
+        final redirectUrl = await ApiService.getRedirectUrl();
+        developer.log(
+          'Fetched URL from backend: $redirectUrl',
+          name: 'SplashScreen',
+        );
+
+        // Launch the URL in the browser
+        developer.log(
+          'Attempting to launch URL in browser...',
+          name: 'SplashScreen',
+        );
+
+        // Try the regular method first
+        bool success = await UrlLauncherService.openUrl(redirectUrl);
+        developer.log('URL launch result: $success', name: 'SplashScreen');
+
+        // If that fails, try the manual method
+        if (!success) {
+          developer.log('Trying manual URL launch...', name: 'SplashScreen');
+          success = await UrlLauncherService.openUrlManually(redirectUrl);
+          developer.log(
+            'Manual URL launch result: $success',
+            name: 'SplashScreen',
+          );
+        }
+
+        if (success) {
+          // If successful, wait longer for browser to open, then navigate to start page
+          developer.log(
+            'Waiting 5 seconds for browser to open...',
+            name: 'SplashScreen',
+          );
+
+          // Show a message to the user
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Opening browser... Please check your recent apps if browser doesn\'t appear',
+                ),
+                duration: Duration(seconds: 5),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+
+          // Wait longer for Android to properly handle the intent
+          await Future.delayed(const Duration(seconds: 5));
+          developer.log('Navigating to start page...', name: 'SplashScreen');
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) =>
+                    const StartPage(),
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                transitionDuration: const Duration(milliseconds: 500),
+              ),
+            );
+          }
+        } else {
+          // If failed to launch URL, show dialog with the URL and navigate to start page
+          if (mounted) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('Browser Not Available'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Unable to open browser automatically.'),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Please copy and paste this URL in your browser:',
+                      ),
+                      const SizedBox(height: 10),
+                      SelectableText(
+                        redirectUrl,
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pushReplacement(
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    const StartPage(),
+                            transitionsBuilder:
+                                (
+                                  context,
+                                  animation,
+                                  secondaryAnimation,
+                                  child,
+                                ) {
+                                  return FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  );
+                                },
+                            transitionDuration: const Duration(
+                              milliseconds: 500,
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Continue'),
+                    ),
+                  ],
+                );
+              },
+            );
+          }
+        }
+      } catch (e) {
+        // If API call fails, show error and navigate to start page
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          Navigator.of(context).pushReplacement(
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const StartPage(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+              transitionDuration: const Duration(milliseconds: 500),
+            ),
+          );
+        }
+      }
     });
   }
 
