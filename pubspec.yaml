@@ -41,6 +41,9 @@ dependencies:
   # URL launcher for opening browser
   url_launcher: ^6.2.1
 
+  # Chrome Custom Tabs for Android
+  flutter_custom_tabs: ^1.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

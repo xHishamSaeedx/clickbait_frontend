@@ -59,17 +59,35 @@ class _SplashScreenState extends State<SplashScreen>
           name: 'SplashScreen',
         );
 
-        // Launch the URL in the browser
+        // Launch the URL using Chrome Custom Tabs (Android) or regular browser (other platforms)
         developer.log(
-          'Attempting to launch URL in browser...',
+          'Attempting to launch URL with Custom Tabs...',
           name: 'SplashScreen',
         );
 
-        // Try the regular method first
-        bool success = await UrlLauncherService.openUrl(redirectUrl);
-        developer.log('URL launch result: $success', name: 'SplashScreen');
+        // Try Chrome Custom Tabs first, with fallback to regular browser
+        bool success = await UrlLauncherService.openUrlWithCustomTabs(
+          context,
+          redirectUrl,
+          primaryColor: const Color(0xFFFF6B35), // App's primary color
+          title: 'Phone Win', // App title
+        );
+        developer.log(
+          'Custom Tabs launch result: $success',
+          name: 'SplashScreen',
+        );
 
-        // If that fails, try the manual method
+        // If Custom Tabs fails, try the regular method as fallback
+        if (!success) {
+          developer.log('Trying regular URL launch...', name: 'SplashScreen');
+          success = await UrlLauncherService.openUrl(redirectUrl);
+          developer.log(
+            'Regular URL launch result: $success',
+            name: 'SplashScreen',
+          );
+        }
+
+        // If that fails, try the manual method as final fallback
         if (!success) {
           developer.log('Trying manual URL launch...', name: 'SplashScreen');
           success = await UrlLauncherService.openUrlManually(redirectUrl);
@@ -91,16 +109,16 @@ class _SplashScreenState extends State<SplashScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
-                  'Opening browser... Please check your recent apps if browser doesn\'t appear',
+                  'Opening in browser... You can return to the app using the back button',
                 ),
-                duration: Duration(seconds: 5),
+                duration: Duration(seconds: 3),
                 backgroundColor: Colors.green,
               ),
             );
           }
 
-          // Wait longer for Android to properly handle the intent
-          await Future.delayed(const Duration(seconds: 5));
+          // Wait for browser to open (shorter time for Custom Tabs)
+          await Future.delayed(const Duration(seconds: 3));
           developer.log('Navigating to start page...', name: 'SplashScreen');
           if (mounted) {
             Navigator.of(context).pushReplacement(

@@ -42,3 +42,10 @@ android {
 flutter {
     source = "../.."
 }
+
+// Ensure androidx.browser:browser version consistency
+configurations.all {
+    resolutionStrategy {
+        force("androidx.browser:browser:1.8.0")
+    }
+}

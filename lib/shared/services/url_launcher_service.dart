@@ -1,7 +1,9 @@
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
+import 'chrome_custom_tabs_service.dart';
 
 class UrlLauncherService {
   /// Launches a URL in the default browser
@@ -149,6 +151,53 @@ class UrlLauncherService {
     } catch (e) {
       developer.log('Can launch check error: $e', name: 'UrlLauncherService');
       return false;
+    }
+  }
+
+  /// Opens a URL using Chrome Custom Tabs on Android, falls back to regular browser on other platforms
+  static Future<bool> openUrlWithCustomTabs(
+    BuildContext context,
+    String url, {
+    Color? primaryColor,
+    String? title,
+  }) async {
+    try {
+      developer.log(
+        'Attempting to open URL with Custom Tabs: $url',
+        name: 'UrlLauncherService',
+      );
+
+      // Try Chrome Custom Tabs first on Android
+      if (Platform.isAndroid) {
+        final customTabsSuccess =
+            await ChromeCustomTabsService.openUrlInCustomTab(
+              context,
+              url,
+              primaryColor: primaryColor,
+              title: title,
+            );
+
+        if (customTabsSuccess) {
+          developer.log(
+            'Chrome Custom Tabs launch successful',
+            name: 'UrlLauncherService',
+          );
+          return true;
+        }
+
+        developer.log(
+          'Chrome Custom Tabs failed, falling back to regular browser',
+          name: 'UrlLauncherService',
+        );
+      }
+
+      // Fallback to regular URL launcher
+      return await openUrl(url);
+    } catch (e) {
+      developer.log('Custom Tabs launch error: $e', name: 'UrlLauncherService');
+
+      // Final fallback to regular URL launcher
+      return await openUrl(url);
     }
   }
 }
