@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'giveaway_page.dart';
 
 class PhoneSelectionPage extends StatefulWidget {
   const PhoneSelectionPage({super.key});
@@ -43,33 +44,10 @@ class _PhoneSelectionPageState extends State<PhoneSelectionPage> {
       selectedPhone = phoneName;
     });
 
-    // Navigate to next screen or show confirmation
-    _showPhoneSelectedDialog(phoneName);
-  }
-
-  void _showPhoneSelectedDialog(String phoneName) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1a1a2e),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Phone Selected!',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'You selected $phoneName. Ready to win?',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Continue',
-              style: TextStyle(color: Color(0xFFFF6B35)),
-            ),
-          ),
-        ],
+    // Navigate to giveaway page
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => GiveawayPage(phoneName: phoneName),
       ),
     );
   }
