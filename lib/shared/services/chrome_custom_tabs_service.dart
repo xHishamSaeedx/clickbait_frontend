@@ -27,44 +27,55 @@ class ChromeCustomTabsService {
         return false;
       }
 
-      final Uri uri = Uri.parse(url);
-
       // Use the app's primary color if not provided
       final Color themeColor = primaryColor ?? const Color(0xFFFF6B35);
 
-      // Launch Chrome Custom Tab
-      await launch(
-        url,
-        customTabsOption: CustomTabsOption(
-          toolbarColor: themeColor,
-          enableDefaultShare: true,
-          enableUrlBarHiding: true,
-          showPageTitle: true,
-          animation: CustomTabsSystemAnimation.slideIn(),
-          extraCustomTabs: <String>[
-            // Add other browsers that support Custom Tabs
-            'org.mozilla.firefox',
-            'com.microsoft.emmx',
-            'com.opera.browser',
-          ],
-        ),
-        safariVCOption: SafariViewControllerOption(
-          preferredBarTintColor: themeColor,
-          preferredControlTintColor: Colors.white,
-          barCollapsingEnabled: true,
-          entersReaderIfAvailable: false,
-          dismissButtonStyle: SafariViewControllerDismissButtonStyle.close,
-        ),
-      );
+      // Launch Chrome Custom Tab with proper error handling
+      try {
+        developer.log(
+          'Launching Chrome Custom Tab with URL: $url',
+          name: 'ChromeCustomTabsService',
+        );
 
-      developer.log(
-        'Chrome Custom Tab launched successfully',
-        name: 'ChromeCustomTabsService',
-      );
-      return true;
+        await launch(
+          url,
+          customTabsOption: CustomTabsOption(
+            toolbarColor: themeColor,
+            enableDefaultShare: true,
+            enableUrlBarHiding: true,
+            showPageTitle: true,
+            animation: CustomTabsSystemAnimation.slideIn(),
+            extraCustomTabs: <String>[
+              // Add other browsers that support Custom Tabs
+              'org.mozilla.firefox',
+              'com.microsoft.emmx',
+              'com.opera.browser',
+            ],
+          ),
+          safariVCOption: SafariViewControllerOption(
+            preferredBarTintColor: themeColor,
+            preferredControlTintColor: Colors.white,
+            barCollapsingEnabled: true,
+            entersReaderIfAvailable: false,
+            dismissButtonStyle: SafariViewControllerDismissButtonStyle.close,
+          ),
+        );
+
+        developer.log(
+          'Chrome Custom Tab launch completed successfully',
+          name: 'ChromeCustomTabsService',
+        );
+        return true;
+      } catch (launchError) {
+        developer.log(
+          'Chrome Custom Tab launch failed with error: $launchError',
+          name: 'ChromeCustomTabsService',
+        );
+        return false;
+      }
     } catch (e) {
       developer.log(
-        'Chrome Custom Tab launch error: $e',
+        'Chrome Custom Tab service error: $e',
         name: 'ChromeCustomTabsService',
       );
       return false;
@@ -75,13 +86,17 @@ class ChromeCustomTabsService {
   static Future<bool> isCustomTabsAvailable() async {
     try {
       if (!Platform.isAndroid) {
+        developer.log(
+          'Platform is not Android, Custom Tabs not available',
+          name: 'ChromeCustomTabsService',
+        );
         return false;
       }
 
       // For Android, assume Chrome Custom Tabs are available
       // The package will handle fallback if Chrome is not installed
       developer.log(
-        'Chrome Custom Tabs should be available on Android',
+        'Android platform detected, Chrome Custom Tabs should be available',
         name: 'ChromeCustomTabsService',
       );
       return true;

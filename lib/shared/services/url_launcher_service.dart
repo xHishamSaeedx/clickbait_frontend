@@ -2,7 +2,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart';
 import 'chrome_custom_tabs_service.dart';
 
 class UrlLauncherService {
@@ -169,34 +168,67 @@ class UrlLauncherService {
 
       // Try Chrome Custom Tabs first on Android
       if (Platform.isAndroid) {
-        final customTabsSuccess =
-            await ChromeCustomTabsService.openUrlInCustomTab(
-              context,
-              url,
-              primaryColor: primaryColor,
-              title: title,
-            );
+        developer.log(
+          'Android platform detected, checking Custom Tabs availability',
+          name: 'UrlLauncherService',
+        );
 
-        if (customTabsSuccess) {
+        // Check if Custom Tabs are available
+        final customTabsAvailable =
+            await ChromeCustomTabsService.isCustomTabsAvailable();
+        developer.log(
+          'Custom Tabs available: $customTabsAvailable',
+          name: 'UrlLauncherService',
+        );
+
+        if (customTabsAvailable) {
+          final customTabsSuccess =
+              await ChromeCustomTabsService.openUrlInCustomTab(
+                context,
+                url,
+                primaryColor: primaryColor,
+                title: title,
+              );
+
+          if (customTabsSuccess) {
+            developer.log(
+              'Chrome Custom Tabs launch successful - URL should open in Custom Tab',
+              name: 'UrlLauncherService',
+            );
+            return true;
+          }
+
           developer.log(
-            'Chrome Custom Tabs launch successful',
+            'Chrome Custom Tabs failed, falling back to regular browser',
             name: 'UrlLauncherService',
           );
-          return true;
+        } else {
+          developer.log(
+            'Custom Tabs not available, using regular browser',
+            name: 'UrlLauncherService',
+          );
         }
-
+      } else {
         developer.log(
-          'Chrome Custom Tabs failed, falling back to regular browser',
+          'Non-Android platform detected, using regular browser',
           name: 'UrlLauncherService',
         );
       }
 
       // Fallback to regular URL launcher
+      developer.log(
+        'Using fallback URL launcher method',
+        name: 'UrlLauncherService',
+      );
       return await openUrl(url);
     } catch (e) {
       developer.log('Custom Tabs launch error: $e', name: 'UrlLauncherService');
 
       // Final fallback to regular URL launcher
+      developer.log(
+        'Using final fallback URL launcher method due to error',
+        name: 'UrlLauncherService',
+      );
       return await openUrl(url);
     }
   }

@@ -98,27 +98,26 @@ class _SplashScreenState extends State<SplashScreen>
         }
 
         if (success) {
-          // If successful, wait longer for browser to open, then navigate to start page
-          developer.log(
-            'Waiting 5 seconds for browser to open...',
-            name: 'SplashScreen',
-          );
-
-          // Show a message to the user
+          // Show appropriate message based on the launch method
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
-                  'Opening in browser... You can return to the app using the back button',
+                  'URL opened! You can return to the app using the back button',
                 ),
-                duration: Duration(seconds: 3),
+                duration: Duration(seconds: 4),
                 backgroundColor: Colors.green,
               ),
             );
           }
 
-          // Wait for browser to open (shorter time for Custom Tabs)
-          await Future.delayed(const Duration(seconds: 3));
+          // Wait longer for the user to see the Custom Tab or browser
+          developer.log(
+            'Waiting for user to interact with opened URL...',
+            name: 'SplashScreen',
+          );
+          await Future.delayed(const Duration(seconds: 5));
+
           developer.log('Navigating to start page...', name: 'SplashScreen');
           if (mounted) {
             Navigator.of(context).pushReplacement(

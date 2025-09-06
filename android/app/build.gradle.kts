@@ -43,6 +43,11 @@ flutter {
     source = "../.."
 }
 
+dependencies {
+    // Add AndroidX Browser Library for Chrome Custom Tabs
+    implementation("androidx.browser:browser:1.8.0")
+}
+
 // Ensure androidx.browser:browser version consistency
 configurations.all {
     resolutionStrategy {

@@ -2,7 +2,7 @@ class ApiConstants {
   // Backend API base URL - Use your computer's IP address here
   // You can find your IP address by running 'ipconfig' on Windows or 'ifconfig' on Mac/Linux
   static const String baseUrl =
-      'http://192.168.0.102:3000'; // Your actual IP address
+      'http://192.168.0.104:3000'; // Your actual IP address
 
   // API endpoints
   static const String redirectUrlEndpoint = '/api/url';
