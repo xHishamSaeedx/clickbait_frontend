@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'urls_page.dart';
 
 class GiveawayPage extends StatelessWidget {
   final String phoneName;
@@ -128,13 +129,10 @@ class GiveawayPage extends StatelessWidget {
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(28),
                                 onTap: () {
-                                  // Handle button tap
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Starting giveaway for $phoneName!',
-                                      ),
-                                      backgroundColor: const Color(0xFF2196F3),
+                                  // Navigate to URLs page
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => const UrlsPage(),
                                     ),
                                   );
                                 },
