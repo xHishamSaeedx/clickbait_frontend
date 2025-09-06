@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../../../../shared/services/url_launcher_service.dart';
 
 class UrlsPage extends StatefulWidget {
   const UrlsPage({super.key});
@@ -270,7 +271,7 @@ class _UrlsPageState extends State<UrlsPage> {
     final String? createdAt = urlData['createdAt'];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF2d3748).withOpacity(0.8),
@@ -330,7 +331,51 @@ class _UrlsPageState extends State<UrlsPage> {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+
+          // Instructions section
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF64b5f6).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: const Color(0xFF64b5f6).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.assignment,
+                      color: Color(0xFF64b5f6),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Instructions:',
+                      style: TextStyle(
+                        color: Color(0xFF64b5f6),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildInstructionStep('1', 'Visit the URL below'),
+                _buildInstructionStep('2', 'Wait for 40 seconds on the page'),
+                _buildInstructionStep('3', 'Stay active on this page'),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 12),
+
           // URL content
           Container(
             width: double.infinity,
@@ -340,15 +385,51 @@ class _UrlsPageState extends State<UrlsPage> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
-            child: SelectableText(
-              url,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontFamily: 'monospace',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'URL to visit:',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  url,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Visit URL Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _visitUrl(url, context),
+              icon: const Icon(Icons.open_in_browser, size: 18),
+              label: const Text('Visit URL'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF64b5f6),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 2,
               ),
             ),
           ),
+
           if (createdAt != null) ...[
             const SizedBox(height: 8),
             Text(
@@ -356,6 +437,165 @@ class _UrlsPageState extends State<UrlsPage> {
               style: const TextStyle(color: Colors.grey, fontSize: 12),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _visitUrl(String url, BuildContext context) async {
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF64b5f6)),
+            ),
+          );
+        },
+      );
+
+      // Try to open URL with custom Chrome tabs
+      bool success = await UrlLauncherService.openUrlWithCustomTabs(
+        context,
+        url,
+        primaryColor: const Color(0xFF64b5f6),
+        title: 'Phone Win',
+      );
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (success) {
+        // Show success message
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'URL opened! You can return to the app using the back button',
+              ),
+              duration: Duration(seconds: 3),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        // If custom tabs fail, try regular URL launcher
+        success = await UrlLauncherService.openUrl(url);
+
+        if (success) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('URL opened in browser!'),
+                duration: Duration(seconds: 3),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } else {
+          // Show error dialog with URL to copy
+          if (context.mounted) {
+            _showUrlErrorDialog(context, url);
+          }
+        }
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        _showUrlErrorDialog(context, url);
+      }
+    }
+  }
+
+  void _showUrlErrorDialog(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Cannot Open URL'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Unable to open the URL automatically.'),
+              const SizedBox(height: 12),
+              const Text(
+                'Please copy and paste this URL in your browser:',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: SelectableText(
+                  url,
+                  style: const TextStyle(
+                    color: Colors.blue,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildInstructionStep(String stepNumber, String instruction) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: const Color(0xFF64b5f6),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Center(
+              child: Text(
+                stepNumber,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              instruction,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+            ),
+          ),
         ],
       ),
     );
