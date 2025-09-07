@@ -629,6 +629,54 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
               child: Column(
                 children: [
                   const SizedBox(height: 10),
+                  // Top banner image
+                  Container(
+                    width: double.infinity,
+                    height: 200,
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        'assets/images/freefirebanner.jpg',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 200,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF64b5f6).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFF64b5f6).withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.image_not_supported,
+                                    color: Color(0xFF64b5f6),
+                                    size: 32,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Banner Image',
+                                    style: TextStyle(
+                                      color: Color(0xFF64b5f6),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   // Header with back button
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -643,19 +691,6 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
                           ),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                        ),
-                        const Expanded(
-                          child: Center(
-                            child: Text(
-                              'URLS',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF64b5f6), // Light blue color
-                                letterSpacing: 2,
-                              ),
-                            ),
-                          ),
                         ),
                         const SizedBox(width: 40), // Balance the back button
                       ],
@@ -751,66 +786,12 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
       );
     }
 
-    return Column(
-      children: [
-        // Instructions section
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF64b5f6).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFF64b5f6).withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.assignment,
-                    color: Color(0xFF64b5f6),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Instructions:',
-                    style: TextStyle(
-                      color: Color(0xFF64b5f6),
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _buildInstructionStep('1', 'Click "Visit URL" to open the link'),
-              _buildInstructionStep(
-                '2',
-                'A 40-second timer will start automatically',
-              ),
-              _buildInstructionStep(
-                '3',
-                'Stay on the opened page until timer completes',
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        // URLs list
-        Expanded(
-          child: ListView.builder(
-            itemCount: urls.length,
-            itemBuilder: (context, index) {
-              final urlData = urls[index];
-              return _buildUrlCard(urlData, index);
-            },
-          ),
-        ),
-      ],
+    return ListView.builder(
+      itemCount: urls.length,
+      itemBuilder: (context, index) {
+        final urlData = urls[index];
+        return _buildUrlCard(urlData, index);
+      },
     );
   }
 
@@ -823,217 +804,149 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
     final bool isCurrentlyPaused = isCurrentlyActive && _isTimerPaused;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: const Color(0xFF2d3748).withOpacity(0.9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isCurrentlyPaused
-              ? Colors.orange.withOpacity(0.8)
-              : isCurrentlyActive
-              ? const Color(0xFF64b5f6).withOpacity(0.8)
-              : isCompleted
-              ? Colors.green.withOpacity(0.5)
-              : isActive
-              ? const Color(0xFF64b5f6).withOpacity(0.3)
-              : Colors.red.withOpacity(0.3),
-          width: (isCurrentlyActive || isCurrentlyPaused) ? 2 : 1,
-        ),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
-          if (isCurrentlyActive || isCurrentlyPaused)
-            BoxShadow(
-              color:
-                  (isCurrentlyPaused ? Colors.orange : const Color(0xFF64b5f6))
-                      .withOpacity(0.2),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // Header row
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? const Color(0xFF64b5f6).withOpacity(0.2)
-                      : Colors.red.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '#${index + 1}',
-                  style: TextStyle(
-                    color: isActive ? const Color(0xFF64b5f6) : Colors.red,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (isCurrentlyPaused)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'TIMER PAUSED',
-                    style: TextStyle(
-                      color: Colors.orange,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
-              else if (isCurrentlyActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF64b5f6).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'TIMER ACTIVE',
-                    style: TextStyle(
-                      color: Color(0xFF64b5f6),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
-              else if (isCompleted)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'COMPLETED',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? Colors.green.withOpacity(0.2)
-                        : Colors.red.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    isActive ? 'ACTIVE' : 'INACTIVE',
-                    style: TextStyle(
-                      color: isActive ? Colors.green : Colors.red,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              const Spacer(),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // Visit URL Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: isCompleted
-                  ? null
+          // Orange accent bar
+          Container(
+            width: 6,
+            height: 100,
+            decoration: BoxDecoration(
+              color: isCompleted
+                  ? Colors.green
                   : isCurrentlyPaused
-                  ? _resumeTimer
+                  ? Colors.orange
                   : isCurrentlyActive
-                  ? null // Disable if this is the active timer
-                  : (_isTimerActive || _isTimerPaused)
-                  ? null // Disable if any timer is active or paused
-                  : () => _visitUrlWithTimer(url, id, context),
-              icon: Icon(
-                isCompleted
-                    ? Icons.check_circle
-                    : isCurrentlyPaused
-                    ? Icons.play_circle
-                    : isCurrentlyActive
-                    ? Icons.timer
-                    : (_isTimerActive || _isTimerPaused)
-                    ? Icons.timer_off
-                    : Icons.open_in_browser,
-                size: 18,
+                  ? const Color(0xFF64b5f6)
+                  : Colors.orange,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                bottomLeft: Radius.circular(12),
               ),
-              label: Text(
-                isCompleted
-                    ? 'Completed'
-                    : isCurrentlyPaused
-                    ? 'Resume Timer'
-                    : isCurrentlyActive
-                    ? 'Timer Active'
-                    : (_isTimerActive || _isTimerPaused)
-                    ? 'Timer Running'
-                    : 'Visit URL',
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isCompleted
-                    ? Colors.green
-                    : isCurrentlyPaused
-                    ? Colors.orange
-                    : isCurrentlyActive
-                    ? const Color(0xFF64b5f6)
-                    : (_isTimerActive || _isTimerPaused)
-                    ? Colors.grey.withOpacity(0.6)
-                    : const Color(0xFF64b5f6),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation:
-                    isCompleted ||
-                        isCurrentlyPaused ||
-                        isCurrentlyActive ||
-                        (!_isTimerActive && !_isTimerPaused)
-                    ? 4
-                    : 1,
-                shadowColor: isCompleted
-                    ? Colors.green.withOpacity(0.3)
-                    : isCurrentlyPaused
-                    ? Colors.orange.withOpacity(0.3)
-                    : isCurrentlyActive
-                    ? const Color(0xFF64b5f6).withOpacity(0.3)
-                    : (_isTimerActive || _isTimerPaused)
-                    ? Colors.grey.withOpacity(0.3)
-                    : const Color(0xFF64b5f6).withOpacity(0.3),
+            ),
+          ),
+          // Main content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // Step indicator
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: isCompleted
+                          ? Colors.green
+                          : isCurrentlyPaused
+                          ? Colors.orange
+                          : isCurrentlyActive
+                          ? const Color(0xFF64b5f6)
+                          : Colors.orange,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Instructions text
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Visit and wait for 40 seconds',
+                          style: TextStyle(
+                            color: isCompleted
+                                ? Colors.green
+                                : isCurrentlyPaused
+                                ? Colors.orange
+                                : isCurrentlyActive
+                                ? const Color(0xFF64b5f6)
+                                : Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Stay active on this page',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Open button
+                  ElevatedButton(
+                    onPressed: isCompleted
+                        ? null
+                        : isCurrentlyPaused
+                        ? _resumeTimer
+                        : isCurrentlyActive
+                        ? null // Disable if this is the active timer
+                        : (_isTimerActive || _isTimerPaused)
+                        ? null // Disable if any timer is active or paused
+                        : () => _visitUrlWithTimer(url, id, context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isCompleted
+                          ? Colors.green
+                          : isCurrentlyPaused
+                          ? Colors.orange
+                          : isCurrentlyActive
+                          ? const Color(0xFF64b5f6)
+                          : (_isTimerActive || _isTimerPaused)
+                          ? Colors.grey.withOpacity(0.6)
+                          : Colors.orange,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: Text(
+                      isCompleted
+                          ? 'Completed'
+                          : isCurrentlyPaused
+                          ? 'Resume'
+                          : isCurrentlyActive
+                          ? 'Active'
+                          : (_isTimerActive || _isTimerPaused)
+                          ? 'Busy'
+                          : 'Open',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1187,42 +1100,6 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
           ],
         );
       },
-    );
-  }
-
-  Widget _buildInstructionStep(String stepNumber, String instruction) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: const Color(0xFF64b5f6),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                stepNumber,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              instruction,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
