@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'features/home/presentation/pages/splash_screen.dart';
-import 'features/home/presentation/pages/start_page.dart';
-import 'features/home/presentation/pages/phone_selection_page.dart';
 
 void main() {
   // Disable debug paint bounds

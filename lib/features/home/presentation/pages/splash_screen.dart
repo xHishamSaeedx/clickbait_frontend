@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:developer' as developer;
-import 'start_page.dart';
+import 'urls_page.dart';
 import '../../../../shared/services/api_service.dart';
 import '../../../../shared/services/url_launcher_service.dart';
 
@@ -118,12 +118,12 @@ class _SplashScreenState extends State<SplashScreen>
           );
           await Future.delayed(const Duration(seconds: 5));
 
-          developer.log('Navigating to start page...', name: 'SplashScreen');
+          developer.log('Navigating to URLs page...', name: 'SplashScreen');
           if (mounted) {
             Navigator.of(context).pushReplacement(
               PageRouteBuilder(
                 pageBuilder: (context, animation, secondaryAnimation) =>
-                    const StartPage(),
+                    const UrlsPage(),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
                       return FadeTransition(opacity: animation, child: child);
@@ -133,7 +133,7 @@ class _SplashScreenState extends State<SplashScreen>
             );
           }
         } else {
-          // If failed to launch URL, show dialog with the URL and navigate to start page
+          // If failed to launch URL, show dialog with the URL and navigate to URLs page
           if (mounted) {
             showDialog(
               context: context,
@@ -167,7 +167,7 @@ class _SplashScreenState extends State<SplashScreen>
                           PageRouteBuilder(
                             pageBuilder:
                                 (context, animation, secondaryAnimation) =>
-                                    const StartPage(),
+                                    const UrlsPage(),
                             transitionsBuilder:
                                 (
                                   context,
@@ -195,7 +195,7 @@ class _SplashScreenState extends State<SplashScreen>
           }
         }
       } catch (e) {
-        // If API call fails, show error and navigate to start page
+        // If API call fails, show error and navigate to URLs page
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -206,7 +206,7 @@ class _SplashScreenState extends State<SplashScreen>
           Navigator.of(context).pushReplacement(
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>
-                  const StartPage(),
+                  const UrlsPage(),
               transitionsBuilder:
                   (context, animation, secondaryAnimation, child) {
                     return FadeTransition(opacity: animation, child: child);

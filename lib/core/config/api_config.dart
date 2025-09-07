@@ -1,7 +1,7 @@
 class ApiConfig {
   // Backend server configuration
   // Change this IP address if your computer's IP address changes
-  static const String baseUrl = 'http://192.168.0.104:3000';
+  static const String baseUrl = 'http://192.168.0.102:3000';
 
   // API endpoints
   static const String urlsEndpoint = '/api/urls';

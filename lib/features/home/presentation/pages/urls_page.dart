@@ -97,7 +97,7 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
       });
 
       // Backend URL - using your computer's IP address
-      const String baseUrl = 'http://192.168.0.104:3000';
+      const String baseUrl = 'http://192.168.0.102:3000';
 
       print('Attempting to fetch URLs from: $baseUrl/api/urls');
 
@@ -129,7 +129,7 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
           error =
               'Cannot connect to backend server.\n\n'
               'Make sure:\n'
-              '1. Backend server is running on 192.168.0.104:3000\n'
+              '1. Backend server is running on 192.168.0.102:3000\n'
               '2. Your device and computer are on the same network\n'
               '3. Firewall allows connections on port 3000\n\n'
               'Error: $e';
