@@ -1,11 +1,11 @@
 {
-    "name": "clickbait_frontend",
-    "short_name": "clickbait_frontend",
+    "name": "FreeFire Diamonds",
+    "short_name": "FreeFire Diamonds",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "FreeFire Diamonds - A new Flutter project.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
