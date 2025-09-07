@@ -311,6 +311,8 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
         print('Resuming timer from $_remainingSeconds seconds');
         setState(() {
           _isTimerPaused = false;
+          _justStartedTimer =
+              true; // Set flag to prevent immediate pausing when URL opens
         });
 
         _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -321,6 +323,12 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
           } else {
             _completeTimer();
           }
+        });
+
+        // Reset the _justStartedTimer flag after a delay to allow normal pausing behavior
+        Timer(const Duration(seconds: 2), () {
+          _justStartedTimer = false;
+          print('Reset _justStartedTimer flag after resume');
         });
 
         // Show success message
@@ -343,6 +351,8 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
           // Resume the timer
           setState(() {
             _isTimerPaused = false;
+            _justStartedTimer =
+                true; // Set flag to prevent immediate pausing when URL opens
           });
 
           _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -353,6 +363,12 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
             } else {
               _completeTimer();
             }
+          });
+
+          // Reset the _justStartedTimer flag after a delay to allow normal pausing behavior
+          Timer(const Duration(seconds: 2), () {
+            _justStartedTimer = false;
+            print('Reset _justStartedTimer flag after resume (fallback)');
           });
 
           if (context.mounted) {
@@ -1094,6 +1110,10 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
                   ? null
                   : isCurrentlyPaused
                   ? _resumeTimer
+                  : isCurrentlyActive
+                  ? null // Disable if this is the active timer
+                  : (_isTimerActive || _isTimerPaused)
+                  ? null // Disable if any timer is active or paused
                   : () => _visitUrlWithTimer(url, id, context),
               icon: Icon(
                 isCompleted
@@ -1102,6 +1122,8 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
                     ? Icons.play_circle
                     : isCurrentlyActive
                     ? Icons.timer
+                    : (_isTimerActive || _isTimerPaused)
+                    ? Icons.timer_off
                     : Icons.open_in_browser,
                 size: 18,
               ),
@@ -1112,6 +1134,8 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
                     ? 'Resume Timer'
                     : isCurrentlyActive
                     ? 'Timer Active'
+                    : (_isTimerActive || _isTimerPaused)
+                    ? 'Timer Running'
                     : 'Visit URL',
               ),
               style: ElevatedButton.styleFrom(
@@ -1121,6 +1145,8 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
                     ? Colors.orange
                     : isCurrentlyActive
                     ? const Color(0xFF64b5f6)
+                    : (_isTimerActive || _isTimerPaused)
+                    ? Colors.grey.withOpacity(0.6)
                     : const Color(0xFF64b5f6),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
