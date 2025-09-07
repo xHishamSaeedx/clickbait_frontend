@@ -12,7 +12,8 @@ class UrlsPage extends StatefulWidget {
   State<UrlsPage> createState() => _UrlsPageState();
 }
 
-class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
+class _UrlsPageState extends State<UrlsPage>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> urls = [];
   bool isLoading = true;
   String? error;
@@ -31,17 +32,47 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
   // Flag to prevent immediate pausing when URL opens
   bool _justStartedTimer = false;
 
+  // Rainbow title animation
+  late AnimationController _rainbowController;
+  late Animation<double> _rainbowShift;
+
+  final List<Color> _rainbowColors = const [
+    Color(0xFFFF3D00), // red
+    Color(0xFFFF7043), // deep orange
+    Color(0xFFFFA726), // orange
+    Color(0xFFFFEE58), // yellow
+    Color(0xFFCDDC39), // lime
+    Color(0xFF9CCC65), // light green
+    Color(0xFF00E676), // green
+    Color(0xFF26A69A), // teal
+    Color(0xFF40C4FF), // light blue
+    Color(0xFF2196F3), // blue
+    Color(0xFF3F51B5), // indigo
+    Color(0xFF7C4DFF), // violet
+    Color(0xFFE040FB), // magenta
+  ];
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _fetchUrls();
+
+    // Rainbow gradient animation
+    _rainbowController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
+    _rainbowShift = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _rainbowController, curve: Curves.linear),
+    );
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
+    _rainbowController.dispose();
     super.dispose();
   }
 
@@ -677,26 +708,80 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // Header with back button
+                  // Headline under banner
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(
-                            Icons.arrow_back_ios,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        const SizedBox(width: 40), // Balance the back button
-                      ],
+                    child: AnimatedBuilder(
+                      animation: _rainbowController,
+                      builder: (context, child) {
+                        final double shift = _rainbowShift.value;
+                        return Column(
+                          children: [
+                            ShaderMask(
+                              shaderCallback: (Rect bounds) {
+                                return LinearGradient(
+                                  colors: _rainbowColors,
+                                  tileMode: TileMode.mirror,
+                                  transform: _SlidingGradientTransform(shift),
+                                ).createShader(bounds);
+                              },
+                              blendMode: BlendMode.srcIn,
+                              child: const Text(
+                                'FREE FIRE FREE DIAMONDS',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Underline accent
+                            Container(
+                              height: 4,
+                              width: double.infinity,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: _rainbowColors,
+                                  tileMode: TileMode.mirror,
+                                  transform: _SlidingGradientTransform(shift),
+                                ),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(2),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ShaderMask(
+                              shaderCallback: (Rect bounds) {
+                                return LinearGradient(
+                                  colors: _rainbowColors,
+                                  tileMode: TileMode.mirror,
+                                  transform: _SlidingGradientTransform(shift),
+                                ).createShader(bounds);
+                              },
+                              blendMode: BlendMode.srcIn,
+                              child: const Text(
+                                'COMPLETE ALL STEPS TO UNLOCK',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   // Timer display
                   if (_isTimerActive || _isTimerPaused) _buildTimerDisplay(),
                   // Content
@@ -798,7 +883,6 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
   Widget _buildUrlCard(Map<String, dynamic> urlData, int index) {
     final String url = urlData['url'] ?? 'No URL';
     final String id = urlData['id'] ?? 'Unknown ID';
-    final bool isActive = urlData['active'] ?? true;
     final bool isCompleted = _completedUrls[id] ?? false;
     final bool isCurrentlyActive = _activeUrlId == id;
     final bool isCurrentlyPaused = isCurrentlyActive && _isTimerPaused;
@@ -1101,6 +1185,18 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
         );
       },
     );
+  }
+}
+
+class _SlidingGradientTransform extends GradientTransform {
+  const _SlidingGradientTransform(this.shift);
+
+  final double shift; // 0..1
+
+  @override
+  Matrix4 transform(Rect bounds, {TextDirection? textDirection}) {
+    final double dx = bounds.width * (shift * 2 - 1); // slide left->right
+    return Matrix4.translationValues(dx, 0.0, 0.0);
   }
 }
 

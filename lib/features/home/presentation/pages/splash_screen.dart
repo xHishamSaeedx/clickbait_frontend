@@ -277,7 +277,7 @@ class _SplashScreenState extends State<SplashScreen>
                     const SizedBox(height: 10),
                     // Subtitle
                     const Text(
-                      'Your Ultimate Phone Experience',
+                      'Get your Free Fire free diamonds',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.white70,
