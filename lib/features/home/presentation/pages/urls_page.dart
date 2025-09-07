@@ -660,52 +660,78 @@ class _UrlsPageState extends State<UrlsPage>
               child: Column(
                 children: [
                   const SizedBox(height: 10),
-                  // Top banner image
-                  Container(
-                    width: double.infinity,
-                    height: 200,
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        'assets/images/freefirebanner.jpg',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 200,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF64b5f6).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFF64b5f6).withOpacity(0.3),
-                                width: 1,
-                              ),
-                            ),
-                            child: const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.image_not_supported,
-                                    color: Color(0xFF64b5f6),
-                                    size: 32,
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'Banner Image',
-                                    style: TextStyle(
-                                      color: Color(0xFF64b5f6),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                  // Top banner image with animated rainbow border
+                  AnimatedBuilder(
+                    animation: _rainbowController,
+                    builder: (context, child) {
+                      final double shift = _rainbowShift.value;
+                      return Container(
+                        width: double.infinity,
+                        height: 200,
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: _rainbowColors,
+                            tileMode: TileMode.mirror,
+                            transform: _SlidingGradientTransform(shift),
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        padding: const EdgeInsets.all(3), // border thickness
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            color: const Color(
+                              0xFF000000,
+                            ), // mask to keep border thickness uniform
+                            child: Image.asset(
+                              'assets/images/freefirebanner.jpg',
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF64b5f6,
+                                    ).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFF64b5f6,
+                                      ).withOpacity(0.3),
+                                      width: 1,
                                     ),
                                   ),
-                                ],
-                              ),
+                                  child: const Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.image_not_supported,
+                                          color: Color(0xFF64b5f6),
+                                          size: 32,
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'Banner Image',
+                                          style: TextStyle(
+                                            color: Color(0xFF64b5f6),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
-                    ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 10),
                   // Headline under banner
