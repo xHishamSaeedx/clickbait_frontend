@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 import '../../../../shared/services/url_launcher_service.dart';
 
 class UrlsPage extends StatefulWidget {
@@ -10,15 +12,81 @@ class UrlsPage extends StatefulWidget {
   State<UrlsPage> createState() => _UrlsPageState();
 }
 
-class _UrlsPageState extends State<UrlsPage> {
+class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
   List<Map<String, dynamic>> urls = [];
   bool isLoading = true;
   String? error;
 
+  // Timer-related state
+  Timer? _timer;
+  int _remainingSeconds = 40;
+  bool _isTimerActive = false;
+  String? _activeUrlId;
+  String? _activeUrl;
+  Map<String, bool> _completedUrls = {};
+
+  // Simple pause state - when user closes tab
+  bool _isTimerPaused = false;
+
+  // Flag to prevent immediate pausing when URL opens
+  bool _justStartedTimer = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fetchUrls();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    print('=== APP LIFECYCLE STATE CHANGED ===');
+    print('New state: $state');
+    print(
+      '_isTimerActive: $_isTimerActive, _isTimerPaused: $_isTimerPaused, _justStartedTimer: $_justStartedTimer',
+    );
+
+    // Only handle timer if it's active and not already paused
+    if (_isTimerActive && !_isTimerPaused) {
+      switch (state) {
+        case AppLifecycleState.paused:
+        case AppLifecycleState.inactive:
+        case AppLifecycleState.detached:
+        case AppLifecycleState.hidden:
+          // Don't pause immediately if we just started the timer (URL opening)
+          if (_justStartedTimer) {
+            print('Just started timer, not pausing immediately');
+            // Reset the flag after a short delay
+            Timer(const Duration(seconds: 2), () {
+              _justStartedTimer = false;
+              print('Reset _justStartedTimer flag');
+            });
+          } else {
+            print('Pausing timer - user closed tab');
+            _pauseTimer();
+          }
+          break;
+        case AppLifecycleState.resumed:
+          // User returned to app - show resume dialog if timer was paused
+          print('App resumed - checking if timer is paused');
+          if (_isTimerPaused) {
+            print('Timer is paused, showing resume dialog');
+            _showResumeDialog();
+          } else {
+            print('Timer is not paused, no resume dialog needed');
+          }
+          break;
+      }
+    }
   }
 
   Future<void> _fetchUrls() async {
@@ -71,6 +139,513 @@ class _UrlsPageState extends State<UrlsPage> {
         isLoading = false;
       });
     }
+  }
+
+  void _testTimer() {
+    print('=== TEST TIMER CALLED ===');
+    // For test timer, we don't need the _justStartedTimer flag
+    _timer?.cancel();
+    setState(() {
+      _isTimerActive = true;
+      _remainingSeconds = 40;
+      _activeUrlId = 'test-id';
+      _activeUrl = 'test-url';
+      _isTimerPaused = false;
+      _justStartedTimer = false; // Don't set this for test
+    });
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      print('Test timer tick: _remainingSeconds = $_remainingSeconds');
+      if (_remainingSeconds > 0) {
+        setState(() {
+          _remainingSeconds--;
+        });
+      } else {
+        _completeTimer();
+      }
+    });
+    print('Test timer started');
+  }
+
+  void _startTimer(String urlId, String url) {
+    print('=== _startTimer METHOD CALLED ===');
+    print('URL ID: $urlId');
+    print('URL: $url');
+    print(
+      'Current state before: _isTimerActive=$_isTimerActive, _remainingSeconds=$_remainingSeconds',
+    );
+
+    // Cancel any existing timer
+    _timer?.cancel();
+    print('Existing timer cancelled');
+
+    setState(() {
+      _isTimerActive = true;
+      _remainingSeconds = 40;
+      _activeUrlId = urlId;
+      _activeUrl = url;
+      _isTimerPaused = false;
+      _justStartedTimer = true; // Set flag to prevent immediate pausing
+    });
+    print(
+      'State updated: _isTimerActive=$_isTimerActive, _remainingSeconds=$_remainingSeconds, _justStartedTimer=$_justStartedTimer',
+    );
+    print('About to create Timer.periodic...');
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      print('Timer tick: _remainingSeconds = $_remainingSeconds');
+      if (_remainingSeconds > 0) {
+        setState(() {
+          _remainingSeconds--;
+        });
+        print('Timer decremented to: $_remainingSeconds');
+      } else {
+        print('Timer reached 0, calling _completeTimer');
+        _completeTimer();
+      }
+    });
+
+    print('=== Timer.periodic CREATED ===');
+    print('Timer should now be running with 40 seconds remaining');
+  }
+
+  void _completeTimer() {
+    print('Timer completed!');
+    _timer?.cancel();
+
+    // Mark URL as completed
+    if (_activeUrlId != null) {
+      _completedUrls[_activeUrlId!] = true;
+    }
+
+    // Reset timer state
+    setState(() {
+      _isTimerActive = false;
+      _remainingSeconds = 40;
+      _activeUrlId = null;
+      _activeUrl = null;
+      _isTimerPaused = false;
+      _justStartedTimer = false;
+    });
+
+    _showCompletionDialog();
+  }
+
+  void _stopTimer() {
+    print('Timer stopped by user');
+    _timer?.cancel();
+    setState(() {
+      _isTimerActive = false;
+      _remainingSeconds = 40;
+      _activeUrlId = null;
+      _activeUrl = null;
+      _isTimerPaused = false;
+      _justStartedTimer = false;
+    });
+  }
+
+  void _pauseTimer() {
+    print('=== _pauseTimer CALLED ===');
+    print('_isTimerActive: $_isTimerActive, _isTimerPaused: $_isTimerPaused');
+    if (_isTimerActive && !_isTimerPaused) {
+      print('Pausing timer - user closed tab');
+      _timer?.cancel();
+      setState(() {
+        _isTimerPaused = true;
+      });
+      print('Timer paused successfully');
+    } else {
+      print('Timer not paused - conditions not met');
+    }
+  }
+
+  void _resumeTimer() {
+    print('=== _resumeTimer CALLED ===');
+    print(
+      '_isTimerActive: $_isTimerActive, _isTimerPaused: $_isTimerPaused, _activeUrl: $_activeUrl',
+    );
+    if (_isTimerActive && _isTimerPaused && _activeUrl != null) {
+      print('Resuming timer - reopening URL');
+      _openUrlAndResumeTimer(_activeUrl!);
+    } else {
+      print('Cannot resume timer - conditions not met');
+    }
+  }
+
+  Future<void> _openUrlAndResumeTimer(String url) async {
+    print('=== _openUrlAndResumeTimer CALLED ===');
+    print('URL to reopen: $url');
+    print(
+      'Current state: _isTimerActive=$_isTimerActive, _isTimerPaused=$_isTimerPaused, _remainingSeconds=$_remainingSeconds',
+    );
+    try {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF64b5f6)),
+            ),
+          );
+        },
+      );
+
+      // Try to open URL with custom Chrome tabs
+      bool success = await UrlLauncherService.openUrlWithCustomTabs(
+        context,
+        url,
+        primaryColor: const Color(0xFF64b5f6),
+        title: 'Phone Win',
+      );
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (success) {
+        // Resume the timer - continue from where it was paused
+        print('=== URL REOPENED SUCCESSFULLY ===');
+        print('Resuming timer from $_remainingSeconds seconds');
+        setState(() {
+          _isTimerPaused = false;
+        });
+
+        _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          if (_remainingSeconds > 0) {
+            setState(() {
+              _remainingSeconds--;
+            });
+          } else {
+            _completeTimer();
+          }
+        });
+
+        // Show success message
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'URL reopened! Timer resumed - stay on the page until completion',
+              ),
+              duration: Duration(seconds: 4),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        // If custom tabs fail, try regular URL launcher
+        success = await UrlLauncherService.openUrl(url);
+
+        if (success) {
+          // Resume the timer
+          setState(() {
+            _isTimerPaused = false;
+          });
+
+          _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+            if (_remainingSeconds > 0) {
+              setState(() {
+                _remainingSeconds--;
+              });
+            } else {
+              _completeTimer();
+            }
+          });
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'URL reopened in browser! Timer resumed - stay on the page until completion',
+                ),
+                duration: Duration(seconds: 4),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } else {
+          // Show error dialog with URL to copy
+          if (context.mounted) {
+            _showUrlErrorDialog(context, url);
+          }
+        }
+      }
+    } catch (e) {
+      // Close loading dialog if still open
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        _showUrlErrorDialog(context, url);
+      }
+    }
+  }
+
+  void _showCompletionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1a1a2e),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green),
+              SizedBox(width: 8),
+              Text(
+                'Task Completed!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Congratulations! You have successfully completed the 40-second task. You can now proceed to the next URL or continue with other tasks.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Continue',
+                style: TextStyle(color: Color(0xFF64b5f6)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showResumeDialog() {
+    print('=== _showResumeDialog CALLED ===');
+    print(
+      'Current state: _isTimerActive=$_isTimerActive, _isTimerPaused=$_isTimerPaused, _remainingSeconds=$_remainingSeconds',
+    );
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1a1a2e),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.pause_circle, color: Color(0xFF64b5f6)),
+              SizedBox(width: 8),
+              Text(
+                'Timer Paused',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'The timer was paused when you left the app.',
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Time remaining: ${_formatTime(_remainingSeconds)}',
+                style: const TextStyle(
+                  color: Color(0xFF64b5f6),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Would you like to resume the timer?',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                print('Cancel Timer button pressed');
+                Navigator.of(context).pop();
+                _stopTimer();
+              },
+              child: const Text(
+                'Cancel Timer',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                print('Resume Timer button pressed');
+                Navigator.of(context).pop();
+                _resumeTimer();
+              },
+              child: const Text(
+                'Resume Timer',
+                style: TextStyle(color: Color(0xFF64b5f6)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildTimerDisplay() {
+    print('=== _buildTimerDisplay CALLED ===');
+    print(
+      '_isTimerActive: $_isTimerActive, _isTimerPaused: $_isTimerPaused, _remainingSeconds: $_remainingSeconds',
+    );
+    print('Timer display will show: ${_isTimerPaused ? "PAUSED" : "ACTIVE"}');
+    final progress = (40 - _remainingSeconds) / 40;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2d3748).withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _isTimerPaused
+              ? Colors.orange.withOpacity(0.5)
+              : const Color(0xFF64b5f6).withOpacity(0.5),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (_isTimerPaused ? Colors.orange : const Color(0xFF64b5f6))
+                .withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                _isTimerPaused ? Icons.pause_circle : Icons.timer,
+                color: _isTimerPaused ? Colors.orange : const Color(0xFF64b5f6),
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                _isTimerPaused ? 'Timer Paused' : 'Timer Active',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                _formatTime(_remainingSeconds),
+                style: TextStyle(
+                  color: _isTimerPaused
+                      ? Colors.orange
+                      : const Color(0xFF64b5f6),
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Progress bar
+          Container(
+            height: 8,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progress,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _isTimerPaused
+                        ? [Colors.orange, Colors.deepOrange]
+                        : [const Color(0xFF64b5f6), const Color(0xFF42a5f5)],
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _isTimerPaused
+                      ? 'Timer paused - return to the app to resume'
+                      : 'Stay on the current page until the timer completes',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              if (_isTimerPaused) ...[
+                ElevatedButton(
+                  onPressed: _resumeTimer,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF64b5f6).withOpacity(0.8),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Resume'),
+                ),
+                const SizedBox(width: 8),
+              ],
+              ElevatedButton(
+                onPressed: _stopTimer,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.withOpacity(0.8),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Stop'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -131,6 +706,14 @@ class _UrlsPageState extends State<UrlsPage> {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  // Test button
+                  ElevatedButton(
+                    onPressed: _testTimer,
+                    child: const Text('TEST TIMER'),
+                  ),
+                  const SizedBox(height: 10),
+                  // Timer display
+                  if (_isTimerActive || _isTimerPaused) _buildTimerDisplay(),
                   // Content
                   Expanded(
                     child: Padding(
@@ -269,6 +852,9 @@ class _UrlsPageState extends State<UrlsPage> {
     final String id = urlData['id'] ?? 'Unknown ID';
     final bool isActive = urlData['active'] ?? true;
     final String? createdAt = urlData['createdAt'];
+    final bool isCompleted = _completedUrls[id] ?? false;
+    final bool isCurrentlyActive = _activeUrlId == id;
+    final bool isCurrentlyPaused = isCurrentlyActive && _isTimerPaused;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -277,11 +863,30 @@ class _UrlsPageState extends State<UrlsPage> {
         color: const Color(0xFF2d3748).withOpacity(0.8),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isActive
+          color: isCurrentlyPaused
+              ? Colors.orange.withOpacity(0.8)
+              : isCurrentlyActive
+              ? const Color(0xFF64b5f6).withOpacity(0.8)
+              : isCompleted
+              ? Colors.green.withOpacity(0.5)
+              : isActive
               ? const Color(0xFF64b5f6).withOpacity(0.3)
               : Colors.red.withOpacity(0.3),
-          width: 1,
+          width: (isCurrentlyActive || isCurrentlyPaused) ? 2 : 1,
         ),
+        boxShadow: (isCurrentlyActive || isCurrentlyPaused)
+            ? [
+                BoxShadow(
+                  color:
+                      (isCurrentlyPaused
+                              ? Colors.orange
+                              : const Color(0xFF64b5f6))
+                          .withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,23 +912,84 @@ class _UrlsPageState extends State<UrlsPage> {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? Colors.green.withOpacity(0.2)
-                      : Colors.red.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  isActive ? 'ACTIVE' : 'INACTIVE',
-                  style: TextStyle(
-                    color: isActive ? Colors.green : Colors.red,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+              if (isCurrentlyPaused)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'TIMER PAUSED',
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              else if (isCurrentlyActive)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF64b5f6).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'TIMER ACTIVE',
+                    style: TextStyle(
+                      color: Color(0xFF64b5f6),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              else if (isCompleted)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'COMPLETED',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? Colors.green.withOpacity(0.2)
+                        : Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    isActive ? 'ACTIVE' : 'INACTIVE',
+                    style: TextStyle(
+                      color: isActive ? Colors.green : Colors.red,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
               const Spacer(),
               Text(
                 'ID: ${id.substring(0, 8)}...',
@@ -367,9 +1033,18 @@ class _UrlsPageState extends State<UrlsPage> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                _buildInstructionStep('1', 'Visit the URL below'),
-                _buildInstructionStep('2', 'Wait for 40 seconds on the page'),
-                _buildInstructionStep('3', 'Stay active on this page'),
+                _buildInstructionStep(
+                  '1',
+                  'Click "Visit URL" to open the link',
+                ),
+                _buildInstructionStep(
+                  '2',
+                  'A 40-second timer will start automatically',
+                ),
+                _buildInstructionStep(
+                  '3',
+                  'Stay on the opened page until timer completes',
+                ),
               ],
             ),
           ),
@@ -415,11 +1090,38 @@ class _UrlsPageState extends State<UrlsPage> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => _visitUrl(url, context),
-              icon: const Icon(Icons.open_in_browser, size: 18),
-              label: const Text('Visit URL'),
+              onPressed: isCompleted
+                  ? null
+                  : isCurrentlyPaused
+                  ? _resumeTimer
+                  : () => _visitUrlWithTimer(url, id, context),
+              icon: Icon(
+                isCompleted
+                    ? Icons.check_circle
+                    : isCurrentlyPaused
+                    ? Icons.play_circle
+                    : isCurrentlyActive
+                    ? Icons.timer
+                    : Icons.open_in_browser,
+                size: 18,
+              ),
+              label: Text(
+                isCompleted
+                    ? 'Completed'
+                    : isCurrentlyPaused
+                    ? 'Resume Timer'
+                    : isCurrentlyActive
+                    ? 'Timer Active'
+                    : 'Visit URL',
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF64b5f6),
+                backgroundColor: isCompleted
+                    ? Colors.green
+                    : isCurrentlyPaused
+                    ? Colors.orange
+                    : isCurrentlyActive
+                    ? const Color(0xFF64b5f6)
+                    : const Color(0xFF64b5f6),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -442,7 +1144,18 @@ class _UrlsPageState extends State<UrlsPage> {
     );
   }
 
-  Future<void> _visitUrl(String url, BuildContext context) async {
+  Future<void> _visitUrlWithTimer(
+    String url,
+    String urlId,
+    BuildContext context,
+  ) async {
+    print('=== _visitUrlWithTimer CALLED ===');
+    print('URL: $url');
+    print('ID: $urlId');
+    print(
+      'Current timer state: _isTimerActive=$_isTimerActive, _remainingSeconds=$_remainingSeconds',
+    );
+
     try {
       // Show loading indicator
       showDialog(
@@ -471,14 +1184,20 @@ class _UrlsPageState extends State<UrlsPage> {
       }
 
       if (success) {
+        print('=== URL OPENED SUCCESSFULLY ===');
+        print('About to call _startTimer with urlId: $urlId, url: $url');
+        // Start the timer after successful URL opening
+        _startTimer(urlId, url);
+        print('=== _startTimer CALLED ===');
+
         // Show success message
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'URL opened! You can return to the app using the back button',
+                'URL opened! Timer started - stay on the page for 40 seconds',
               ),
-              duration: Duration(seconds: 3),
+              duration: Duration(seconds: 4),
               backgroundColor: Colors.green,
             ),
           );
@@ -488,11 +1207,19 @@ class _UrlsPageState extends State<UrlsPage> {
         success = await UrlLauncherService.openUrl(url);
 
         if (success) {
+          print('=== URL OPENED SUCCESSFULLY (FALLBACK) ===');
+          print('About to call _startTimer with urlId: $urlId, url: $url');
+          // Start the timer after successful URL opening
+          _startTimer(urlId, url);
+          print('=== _startTimer CALLED (FALLBACK) ===');
+
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('URL opened in browser!'),
-                duration: Duration(seconds: 3),
+                content: Text(
+                  'URL opened in browser! Timer started - stay on the page for 40 seconds',
+                ),
+                duration: Duration(seconds: 4),
                 backgroundColor: Colors.green,
               ),
             );
