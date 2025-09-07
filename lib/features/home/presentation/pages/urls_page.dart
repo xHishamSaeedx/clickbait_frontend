@@ -141,32 +141,6 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
     }
   }
 
-  void _testTimer() {
-    print('=== TEST TIMER CALLED ===');
-    // For test timer, we don't need the _justStartedTimer flag
-    _timer?.cancel();
-    setState(() {
-      _isTimerActive = true;
-      _remainingSeconds = 40;
-      _activeUrlId = 'test-id';
-      _activeUrl = 'test-url';
-      _isTimerPaused = false;
-      _justStartedTimer = false; // Don't set this for test
-    });
-
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      print('Test timer tick: _remainingSeconds = $_remainingSeconds');
-      if (_remainingSeconds > 0) {
-        setState(() {
-          _remainingSeconds--;
-        });
-      } else {
-        _completeTimer();
-      }
-    });
-    print('Test timer started');
-  }
-
   void _startTimer(String urlId, String url) {
     print('=== _startTimer METHOD CALLED ===');
     print('URL ID: $urlId');
@@ -623,40 +597,6 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              if (_isTimerPaused) ...[
-                ElevatedButton(
-                  onPressed: _resumeTimer,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF64b5f6).withOpacity(0.8),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Resume'),
-                ),
-                const SizedBox(width: 8),
-              ],
-              ElevatedButton(
-                onPressed: _stopTimer,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.withOpacity(0.8),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('Stop'),
-              ),
             ],
           ),
         ],
@@ -722,12 +662,6 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Test button
-                  ElevatedButton(
-                    onPressed: _testTimer,
-                    child: const Text('TEST TIMER'),
-                  ),
-                  const SizedBox(height: 10),
                   // Timer display
                   if (_isTimerActive || _isTimerPaused) _buildTimerDisplay(),
                   // Content
@@ -819,31 +753,48 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
 
     return Column(
       children: [
-        // Header with count
+        // Instructions section
         Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF2d3748).withOpacity(0.8),
+            color: const Color(0xFF64b5f6).withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+            border: Border.all(
+              color: const Color(0xFF64b5f6).withOpacity(0.3),
+              width: 1,
+            ),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.link, color: Color(0xFF64b5f6), size: 24),
-              const SizedBox(width: 12),
-              Text(
-                '${urls.length} URLs Found',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.assignment,
+                    color: Color(0xFF64b5f6),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Instructions:',
+                    style: TextStyle(
+                      color: Color(0xFF64b5f6),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              const Spacer(),
-              IconButton(
-                onPressed: _fetchUrls,
-                icon: const Icon(Icons.refresh, color: Color(0xFF64b5f6)),
-                tooltip: 'Refresh',
+              const SizedBox(height: 12),
+              _buildInstructionStep('1', 'Click "Visit URL" to open the link'),
+              _buildInstructionStep(
+                '2',
+                'A 40-second timer will start automatically',
+              ),
+              _buildInstructionStep(
+                '3',
+                'Stay on the opened page until timer completes',
               ),
             ],
           ),
@@ -867,17 +818,16 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
     final String url = urlData['url'] ?? 'No URL';
     final String id = urlData['id'] ?? 'Unknown ID';
     final bool isActive = urlData['active'] ?? true;
-    final String? createdAt = urlData['createdAt'];
     final bool isCompleted = _completedUrls[id] ?? false;
     final bool isCurrentlyActive = _activeUrlId == id;
     final bool isCurrentlyPaused = isCurrentlyActive && _isTimerPaused;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF2d3748).withOpacity(0.8),
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFF2d3748).withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isCurrentlyPaused
               ? Colors.orange.withOpacity(0.8)
@@ -890,19 +840,21 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
               : Colors.red.withOpacity(0.3),
           width: (isCurrentlyActive || isCurrentlyPaused) ? 2 : 1,
         ),
-        boxShadow: (isCurrentlyActive || isCurrentlyPaused)
-            ? [
-                BoxShadow(
-                  color:
-                      (isCurrentlyPaused
-                              ? Colors.orange
-                              : const Color(0xFF64b5f6))
-                          .withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+          if (isCurrentlyActive || isCurrentlyPaused)
+            BoxShadow(
+              color:
+                  (isCurrentlyPaused ? Colors.orange : const Color(0xFF64b5f6))
+                      .withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -911,18 +863,21 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isActive
                       ? const Color(0xFF64b5f6).withOpacity(0.2)
                       : Colors.red.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '#${index + 1}',
                   style: TextStyle(
                     color: isActive ? const Color(0xFF64b5f6) : Colors.red,
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -931,18 +886,18 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
               if (isCurrentlyPaused)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
+                    horizontal: 10,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.orange.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(
                     'TIMER PAUSED',
                     style: TextStyle(
                       color: Colors.orange,
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -950,18 +905,18 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
               else if (isCurrentlyActive)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
+                    horizontal: 10,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF64b5f6).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(
                     'TIMER ACTIVE',
                     style: TextStyle(
                       color: Color(0xFF64b5f6),
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -969,18 +924,18 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
               else if (isCompleted)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
+                    horizontal: 10,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(
                     'COMPLETED',
                     style: TextStyle(
                       color: Colors.green,
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -988,119 +943,29 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
               else
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
+                    horizontal: 10,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: isActive
                         ? Colors.green.withOpacity(0.2)
                         : Colors.red.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     isActive ? 'ACTIVE' : 'INACTIVE',
                     style: TextStyle(
                       color: isActive ? Colors.green : Colors.red,
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               const Spacer(),
-              Text(
-                'ID: ${id.substring(0, 8)}...',
-                style: const TextStyle(color: Colors.grey, fontSize: 10),
-              ),
             ],
           ),
-          const SizedBox(height: 16),
 
-          // Instructions section
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF64b5f6).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: const Color(0xFF64b5f6).withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.assignment,
-                      color: Color(0xFF64b5f6),
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Instructions:',
-                      style: TextStyle(
-                        color: Color(0xFF64b5f6),
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                _buildInstructionStep(
-                  '1',
-                  'Click "Visit URL" to open the link',
-                ),
-                _buildInstructionStep(
-                  '2',
-                  'A 40-second timer will start automatically',
-                ),
-                _buildInstructionStep(
-                  '3',
-                  'Stay on the opened page until timer completes',
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // URL content
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'URL to visit:',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                SelectableText(
-                  url,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
 
           // Visit URL Button
           SizedBox(
@@ -1149,22 +1014,29 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
                     ? Colors.grey.withOpacity(0.6)
                     : const Color(0xFF64b5f6),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                elevation: 2,
+                elevation:
+                    isCompleted ||
+                        isCurrentlyPaused ||
+                        isCurrentlyActive ||
+                        (!_isTimerActive && !_isTimerPaused)
+                    ? 4
+                    : 1,
+                shadowColor: isCompleted
+                    ? Colors.green.withOpacity(0.3)
+                    : isCurrentlyPaused
+                    ? Colors.orange.withOpacity(0.3)
+                    : isCurrentlyActive
+                    ? const Color(0xFF64b5f6).withOpacity(0.3)
+                    : (_isTimerActive || _isTimerPaused)
+                    ? Colors.grey.withOpacity(0.3)
+                    : const Color(0xFF64b5f6).withOpacity(0.3),
               ),
             ),
           ),
-
-          if (createdAt != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Created: ${_formatDate(createdAt)}',
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-          ],
         ],
       ),
     );
@@ -1352,15 +1224,6 @@ class _UrlsPageState extends State<UrlsPage> with WidgetsBindingObserver {
         ],
       ),
     );
-  }
-
-  String _formatDate(String dateString) {
-    try {
-      final DateTime date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-    } catch (e) {
-      return dateString;
-    }
   }
 }
 
