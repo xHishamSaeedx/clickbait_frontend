@@ -70,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen>
           context,
           redirectUrl,
           primaryColor: const Color(0xFFFF6B35), // App's primary color
-          title: 'Phone Win', // App title
+          title: 'FreeFire Diamonds', // App title
         );
         developer.log(
           'Custom Tabs launch result: $success',
@@ -240,7 +240,7 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Phone Icon
+                    // App Logo
                     Container(
                       width: 120,
                       height: 120,
@@ -255,16 +255,18 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.phone_android,
-                        size: 60,
-                        color: Color(0xFFFF6B35),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 30),
                     // App Title
                     const Text(
-                      'Phone Win',
+                      'FreeFire Diamonds',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
